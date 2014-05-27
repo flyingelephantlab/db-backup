@@ -1,0 +1,99 @@
+#! /bin/sh
+
+# This script takes care of making snapshot backups of the database,
+# ships the backups off to a remote FTP server, and deletes the oldest
+# backup instances from the FTP server when it is configured to do so.
+
+CONFIG_FILE_PATH="/etc/db-backup"
+
+SCRIPT_NAME=`basename $0`
+LOGGING_PATH="/var/log/$SCRIPT_NAME"
+LOGGING_TIMESTAMP_FORMAT="%Y-%m-%e %k:%M:%S"
+
+set -e  # Exit on first error
+set -u  # Do not use unset variables
+
+# Setup logging
+mkdir -p `dirname $LOGGING_PATH`
+echo "----------------------------------------------------" >> "$LOGGING_PATH" 
+
+log () {
+  echo `date +"$LOGGING_TIMESTAMP_FORMAT"` "$@" >> $LOGGING_PATH
+  echo "$@"
+}
+
+# Logs about the given error message and exits with a non-zero status
+fatal() {
+  log "**************************"
+  log "* FATAL: $@"
+  log "**************************"
+  exit 1
+}
+
+# Load the configuration parameters
+if [ ! -f "$CONFIG_FILE_PATH" ]; then
+  fatal "Could not find the configuration file $CONFIG_FILE_PATH"
+fi
+. "$CONFIG_FILE_PATH"
+
+# Make sure all the required configuration parameters are set
+REQUIRED_CONFIG_PARAMETERS="BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST"
+for config_entry_name in $REQUIRED_CONFIG_PARAMETERS; do
+  eval val="\${$config_entry_name:-}"
+  if [ -z "$val" ]; then
+    fatal "$config_entry_name configuration parameter is not set"
+  fi 
+done
+
+# Create a temporary directory to dump the backup in
+TEMP_PATH=`mktemp -d`
+log "Working from $TEMP_PATH"
+clean_up () {
+  log "Cleaning up"
+  rm -rf "$TEMP_PATH"
+}
+trap clean_up EXIT
+trap clean_up INT
+trap clean_up EXIT
+
+# Take a database snapshot
+TIMESTAMP=`date +"%Y.%m.%e-%k.%M.%S"`
+SNAPSHOT_PATH="$TEMP_PATH/snapshot-$TIMESTAMP.bz2"
+log "Taking snapshot in $SNAPSHOT_PATH"
+backup_output=`$BACKUP_COMMAND | bzip2 > $SNAPSHOT_PATH 2>&1`
+if [ ! -z "$backup_output" ]; then
+	log $backup_output
+fi
+
+# Executes the given LFTP commands and write the output to stdout
+do_ftp() {
+	lftp -u $FTP_USER,$FTP_PASSPHRASE $FTP_HOST -e "$@ ;exit" 2>&1
+}
+
+# Upload the snapshot to the FTP server
+log "Shipping off the snapshot to the FTP server"
+log `do_ftp "mput -O $FTP_PATH_PREFIX $SNAPSHOT_PATH"`
+
+# Prints out the file names of the snapshots available on the FTP server
+available_snapshots() {
+	do_ftp "recls -1 $FTP_PATH_PREFIX"
+}
+
+AVAILABLE_COUNT=`available_snapshots | wc -l` 
+log "$AVAILABLE_COUNT snapshot(s) available on the FTP server"
+
+# Delete oldest snapshots if available count exceeds limits
+delete_snapshot() {
+	# Deletes the snapshots by their given file names
+	log "Deleting $@"
+	log `do_ftp "rm $@" 2>&1`
+}
+if [ $AVAILABLE_COUNT -gt $KEEP_NEWEST ]; then
+	to_delete=`available_snapshots | sort -r | tail -n +$(($KEEP_NEWEST+1)) | sort`
+	for target in $to_delete; do
+		delete_snapshot $target
+	done
+	log `available_snapshots | wc -l` "snapshot(s) are now available on the FTP server"
+fi
+
+log "Bye"
