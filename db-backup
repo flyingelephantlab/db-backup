@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # This script takes care of making snapshot backups of the database,
 # ships the backups off to a remote FTP server, and deletes the oldest
@@ -7,7 +7,7 @@
 SCRIPT_NAME=`basename $0`
 CONFIG_FILE_PATH="/etc/$SCRIPT_NAME"
 LOGGING_PATH="/var/log/$SCRIPT_NAME"
-REQUIRED_CONFIG_PARAMETERS="BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST"
+REQUIRED_CONFIG_PARAMETERS=(BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST)
 LOGGING_TIMESTAMP_FORMAT="%Y-%m-%e %k:%M:%S"
 
 set -e  # Exit on first error
@@ -37,7 +37,7 @@ fi
 . "$CONFIG_FILE_PATH"
 
 # Make sure all the required configuration parameters are set
-for config_entry_name in $REQUIRED_CONFIG_PARAMETERS; do
+for config_entry_name in ${REQUIRED_CONFIG_PARAMETERS[@][@]}}; do
   eval val="\${$config_entry_name:-}"
   if [ -z "$val" ]; then
     fatal "$config_entry_name configuration parameter is not set"
