@@ -4,10 +4,10 @@
 # ships the backups off to a remote FTP server, and deletes the oldest
 # backup instances from the FTP server when it is configured to do so.
 
-CONFIG_FILE_PATH="/etc/db-backup"
-
 SCRIPT_NAME=`basename $0`
+CONFIG_FILE_PATH="/etc/$SCRIPT_NAME"
 LOGGING_PATH="/var/log/$SCRIPT_NAME"
+REQUIRED_CONFIG_PARAMETERS="BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST"
 LOGGING_TIMESTAMP_FORMAT="%Y-%m-%e %k:%M:%S"
 
 set -e  # Exit on first error
@@ -37,7 +37,6 @@ fi
 . "$CONFIG_FILE_PATH"
 
 # Make sure all the required configuration parameters are set
-REQUIRED_CONFIG_PARAMETERS="BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST"
 for config_entry_name in $REQUIRED_CONFIG_PARAMETERS; do
   eval val="\${$config_entry_name:-}"
   if [ -z "$val" ]; then

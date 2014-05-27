@@ -33,3 +33,6 @@ The passphrase for accessing the FTP server
 
 FTP_PATH_PREFIX
 The path prefix on the FTP server in which to store the database backups
+
+KEEP_NEWEST
+The number of newest backup snapshots to keep on the FTP host
