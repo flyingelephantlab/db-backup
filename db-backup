@@ -72,6 +72,7 @@ do_ftp() {
 
 # Upload the snapshot to the FTP server
 log "Shipping off the snapshot to the FTP server"
+(do_ftp "mkdir -p $FTP_PATH_PREFIX" 2>&1 > /dev/null || true)		# Creates the FTP_PATH_PREFIX if not exists
 log `do_ftp "mput -O $FTP_PATH_PREFIX $SNAPSHOT_PATH"`
 
 # Prints out the file names of the snapshots available on the FTP server
