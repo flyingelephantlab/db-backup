@@ -61,7 +61,7 @@ SNAPSHOT_PATH="$TEMP_PATH/snapshot-$TIMESTAMP.bz2"
 log "Taking snapshot in $SNAPSHOT_PATH"
 backup_output=`$BACKUP_COMMAND | bzip2 > $SNAPSHOT_PATH 2>&1`
 if [ ! -z "$backup_output" ]; then
-	log $backup_output
+	log backup: $backup_output
 fi
 
 # Executes the given LFTP commands and write the output to stdout
@@ -72,7 +72,7 @@ do_ftp() {
 # Upload the snapshot to the FTP server
 log "Shipping off the snapshot to the FTP server"
 (do_ftp "mkdir -p $FTP_PATH_PREFIX" 2>&1 > /dev/null || true)		# Creates the FTP_PATH_PREFIX if not exists
-log `do_ftp "mput -O $FTP_PATH_PREFIX $SNAPSHOT_PATH"`
+log lftp: `do_ftp "mput -O $FTP_PATH_PREFIX $SNAPSHOT_PATH"`
 
 # Prints out the file names of the snapshots available on the FTP server
 available_snapshots() {
@@ -86,7 +86,7 @@ log "$AVAILABLE_COUNT snapshot(s) available on the FTP server"
 delete_snapshot() {
 	# Deletes the snapshots by their given file names
 	log "Deleting $@"
-	log `do_ftp "rm $@" 2>&1`
+	log lftp: `do_ftp "rm $@" 2>&1`
 }
 if [ $AVAILABLE_COUNT -gt $KEEP_NEWEST ]; then
 	to_delete=`available_snapshots | sort -r | tail -n +$(($KEEP_NEWEST+1)) | sort`
