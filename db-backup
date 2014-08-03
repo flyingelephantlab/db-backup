@@ -8,7 +8,8 @@ SCRIPT_NAME=`basename $0`
 CONFIG_FILE_PATH="/etc/$SCRIPT_NAME"
 LOGGING_PATH="/var/log/$SCRIPT_NAME"
 REQUIRED_CONFIG_PARAMETERS=(BACKUP_COMMAND FTP_HOST FTP_USER FTP_PASSPHRASE FTP_PATH_PREFIX KEEP_NEWEST)
-LOGGING_TIMESTAMP_FORMAT="%Y-%m-%e %H:%M:%S"
+LOGGING_TIMESTAMP_FORMAT="%F %H:%M:%S"
+SNAPSHOT_TIMESTAMP_FORMAT="%Y.%m.%d-%I.%M.%S"
 
 set -e  # Exit on first error
 set -u  # Do not use unset variables
@@ -56,7 +57,7 @@ trap clean_up INT
 trap clean_up EXIT
 
 # Take a database snapshot
-TIMESTAMP=`date +"%Y.%m.%e-%k.%M.%S"`
+TIMESTAMP=`date +"$(SNAPSHOT_TIMESTAMP_FORMAT)"`
 SNAPSHOT_PATH="$TEMP_PATH/snapshot-$TIMESTAMP.bz2"
 log "Taking snapshot in $SNAPSHOT_PATH"
 backup_output=`$BACKUP_COMMAND | bzip2 > $SNAPSHOT_PATH 2>&1`
