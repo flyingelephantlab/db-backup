@@ -57,7 +57,7 @@ trap clean_up INT
 trap clean_up EXIT
 
 # Take a database snapshot
-TIMESTAMP=`date +"$(SNAPSHOT_TIMESTAMP_FORMAT)"`
+TIMESTAMP=`date +"${SNAPSHOT_TIMESTAMP_FORMAT}"`
 SNAPSHOT_PATH="$TEMP_PATH/snapshot-$TIMESTAMP.bz2"
 log "Taking snapshot in $SNAPSHOT_PATH"
 backup_output=`$BACKUP_COMMAND | bzip2 > $SNAPSHOT_PATH 2>&1`
